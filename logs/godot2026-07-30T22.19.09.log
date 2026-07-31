@@ -1,0 +1,12 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: AMD - AMD Radeon 780M Graphics
+
+ERROR: Node not found: "Panel/VBoxContainer/ResumeButton" (relative to "/root/World/PauseMenu").
+   at: get_node (scene/main/node.cpp:1975)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://pause_menu.gd:3)
+SCRIPT ERROR: Cannot call method 'grab_focus' on a null value.
+   at: pause_game (res://pause_menu.gd:25)
+   GDScript backtrace (most recent call first):
+       [0] pause_game (res://pause_menu.gd:25)
+       [1] _input (res://pause_menu.gd:16)
