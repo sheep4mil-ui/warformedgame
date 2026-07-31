@@ -16,13 +16,18 @@
     <small>Open <b>/phone/</b> on your phone</small>`;
   Object.assign(panel.style, {
     position: "fixed", left: "18px", top: "18px", zIndex: "1000", width: "260px",
-    display: "grid", gap: "8px", padding: "12px", borderRadius: "10px",
+    display: "none", gap: "8px", padding: "12px", borderRadius: "10px",
     color: "#eef5ff", background: "rgba(10,14,23,.92)", font: "14px system-ui,sans-serif"
   });
   const input = panel.querySelector("input"), button = panel.querySelector("button"), note = panel.querySelector("small");
   for (const control of [input, button]) Object.assign(control.style, {padding:"10px",borderRadius:"6px",border:"1px solid #394760",font:"inherit"});
   Object.assign(button.style, {background:"#72f2c6",color:"#07110e",fontWeight:"800",cursor:"pointer"});
   document.body.appendChild(panel);
+  let pauseMenuOpen = false;
+  window.motionMirrorSetPauseMenu = open => {
+    pauseMenuOpen = Boolean(open);
+    panel.style.display = pauseMenuOpen ? "grid" : "none";
+  };
 
   const setStatus = text => { window.motionMirrorStatus = text; note.textContent = text; };
   const loadPeer = callback => {
@@ -43,12 +48,12 @@
       window.motionMirrorPeer = peer;
       peer.on("open", () => {
         const connection = peer.connect(`warformed-motion-${code}`, {reliable:false});
-        connection.on("open", () => { setStatus("Phone connected"); panel.style.display = "none"; });
+        connection.on("open", () => setStatus("Phone connected"));
         connection.on("data", packet => {
           if (window.motionMirrorQueue.length > 2) window.motionMirrorQueue.shift();
           window.motionMirrorQueue.push(packet);
         });
-        connection.on("close", () => { panel.style.display = "grid"; setStatus("Phone disconnected"); });
+        connection.on("close", () => { panel.style.display = pauseMenuOpen ? "grid" : "none"; setStatus("Phone disconnected"); });
         connection.on("error", () => setStatus("Connection failed"));
       });
       peer.on("error", () => setStatus("Phone not found"));

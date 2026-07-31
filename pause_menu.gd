@@ -32,12 +32,16 @@ func pause_game():
 	get_tree().paused = true
 	show()
 	_cursor.call("activate", get_viewport().get_visible_rect().size)
-	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if OS.has_feature("web") else Input.MOUSE_MODE_HIDDEN
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.motionMirrorSetPauseMenu?.(true)", true)
 	resume_button.grab_focus()
 
 
 func resume_game():
 	_cursor.call("deactivate")
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.motionMirrorSetPauseMenu?.(false)", true)
 	get_tree().paused = false
 	hide()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
