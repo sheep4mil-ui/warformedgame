@@ -16,6 +16,7 @@ var _grid: GridContainer
 var _details: Label
 var _cursor: Control
 var _slot_buttons: Array[Button] = []
+var _hotbar_target_buttons: Array[Button] = []
 var _is_open := false
 
 
@@ -30,7 +31,9 @@ func _ready() -> void:
 
 	_build_interface()
 	_inventory.inventory_changed.connect(_refresh_slots)
+	_hotbar.connect("selected_slot_changed", _on_hotbar_slot_changed)
 	_refresh_slots(_inventory.get_slots_snapshot())
+	_on_hotbar_slot_changed(int(_hotbar.call("get_selected_slot")), {})
 	_set_open(false)
 
 
@@ -64,6 +67,24 @@ func _build_interface() -> void:
 
 	var rule := HSeparator.new()
 	content.add_child(rule)
+
+	var hotbar_heading := Label.new()
+	hotbar_heading.text = "HOTBAR DESTINATION"
+	hotbar_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(hotbar_heading)
+
+	var hotbar_targets := HBoxContainer.new()
+	hotbar_targets.alignment = BoxContainer.ALIGNMENT_CENTER
+	hotbar_targets.add_theme_constant_override("separation", 10)
+	content.add_child(hotbar_targets)
+
+	for hotbar_index in 3:
+		var target_button := Button.new()
+		target_button.custom_minimum_size = Vector2(120, 42)
+		target_button.text = "SLOT %d" % (hotbar_index + 1)
+		target_button.pressed.connect(_select_hotbar_slot.bind(hotbar_index))
+		hotbar_targets.add_child(target_button)
+		_hotbar_target_buttons.append(target_button)
 
 	_grid = GridContainer.new()
 	_grid.columns = 4
@@ -145,7 +166,27 @@ func _set_open(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func _select_hotbar_slot(slot_index: int) -> void:
+	_hotbar.call("select_slot", slot_index)
+
+
+func _on_hotbar_slot_changed(slot_index: int, _item: Dictionary) -> void:
+	for index in _hotbar_target_buttons.size():
+		_hotbar_target_buttons[index].modulate = (
+			Color(1.0, 0.82, 0.32, 1.0)
+			if index == slot_index
+			else Color.WHITE
+		)
+
+
 func _select_item_at_position(global_cursor_position: Vector2) -> void:
+	for hotbar_index in _hotbar_target_buttons.size():
+		var target_button := _hotbar_target_buttons[hotbar_index]
+		if target_button.get_global_rect().has_point(global_cursor_position):
+			target_button.grab_focus()
+			_select_hotbar_slot(hotbar_index)
+			return
+
 	for slot_index in _slot_buttons.size():
 		var button := _slot_buttons[slot_index]
 		if not button.disabled and button.get_global_rect().has_point(global_cursor_position):

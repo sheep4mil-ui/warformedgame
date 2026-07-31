@@ -14,7 +14,7 @@ func _ready() -> void:
 	_emit_state()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("hotbar_previous"):
 		select_slot((_selected_slot - 1 + SLOT_COUNT) % SLOT_COUNT)
 		get_viewport().set_input_as_handled()
@@ -57,4 +57,3 @@ func _emit_state() -> void:
 	var snapshot := get_slots_snapshot()
 	hotbar_changed.emit(snapshot)
 	selected_slot_changed.emit(_selected_slot, snapshot[_selected_slot])
-
