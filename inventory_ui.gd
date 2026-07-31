@@ -3,10 +3,12 @@ extends Control
 const InventoryCursor = preload("res://inventory_cursor.gd")
 
 @export var inventory_path: NodePath
+@export var hotbar_path: NodePath
 @export var player_path: NodePath
 @export var crosshair_path: NodePath
 
 var _inventory: Node
+var _hotbar: Node
 var _player: CharacterBody3D
 var _crosshair: Control
 var _panel: PanelContainer
@@ -22,6 +24,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_inventory = get_node(inventory_path)
+	_hotbar = get_node(hotbar_path)
 	_player = get_node(player_path) as CharacterBody3D
 	_crosshair = get_node(crosshair_path) as Control
 
@@ -83,7 +86,7 @@ func _build_interface() -> void:
 	content.add_child(_details)
 
 	var hint := Label.new()
-	hint.text = "Press I to close"
+	hint.text = "Select an item to equip it - Press E to close"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.modulate = Color(0.7, 0.75, 0.82)
 	content.add_child(hint)
@@ -118,11 +121,13 @@ func _on_slot_selected(slot_index: int) -> void:
 
 	var slot: Dictionary = slots[slot_index]
 	var stack_type := "Infinite stack" if bool(slot.get("stackable", true)) else "Non-stackable"
-	_details.text = "%s  •  Quantity: %d  •  %s  •  Item ID: %s" % [
+	_hotbar.call("assign_item", slot)
+	var selected_slot: int = int(_hotbar.call("get_selected_slot")) + 1
+	_details.text = "%s equipped to hotbar slot %d - Quantity: %d - %s" % [
 		str(slot.get("name", "Unknown")),
+		selected_slot,
 		int(slot.get("quantity", 0)),
 		stack_type,
-		str(slot.get("id", &"")),
 	]
 
 

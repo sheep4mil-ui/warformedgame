@@ -5,6 +5,9 @@
 [ext_resource type="Script" path="res://crosshair.gd" id="3_crosshair"]
 [ext_resource type="Script" path="res://inventory.gd" id="4_inventory"]
 [ext_resource type="Script" path="res://inventory_ui.gd" id="5_inventory_ui"]
+[ext_resource type="Script" path="res://hotbar.gd" id="6_hotbar"]
+[ext_resource type="Script" path="res://hotbar_ui.gd" id="7_hotbar_ui"]
+[ext_resource type="Script" path="res://held_item.gd" id="8_held_item"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_n7e0o"]
 
@@ -85,8 +88,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 [node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=997109270]
 current = true
 
+[node name="HeldItem" type="Node3D" parent="Player/Head/Camera3D"]
+position = Vector3(0.42, -0.34, -0.72)
+rotation_degrees = Vector3(-12, -18, 8)
+script = ExtResource("8_held_item")
+hotbar_path = NodePath("../../../Hotbar")
+
 [node name="Inventory" type="Node" parent="Player"]
 script = ExtResource("4_inventory")
+
+[node name="Hotbar" type="Node" parent="Player"]
+script = ExtResource("6_hotbar")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -110,8 +122,20 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("5_inventory_ui")
 inventory_path = NodePath("../../Player/Inventory")
+hotbar_path = NodePath("../../Player/Hotbar")
 player_path = NodePath("../../Player")
 crosshair_path = NodePath("../Crosshair")
+
+[node name="HotbarUI" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_hotbar_ui")
+hotbar_path = NodePath("../../Player/Hotbar")
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=1398666719]
 process_mode = 2
