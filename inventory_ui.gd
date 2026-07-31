@@ -1,7 +1,6 @@
 extends Control
 
 const InventoryCursor = preload("res://inventory_cursor.gd")
-const CONTROLLER_CURSOR_SPEED := 650.0
 
 @export var inventory_path: NodePath
 @export var player_path: NodePath
@@ -14,7 +13,6 @@ var _panel: PanelContainer
 var _grid: GridContainer
 var _details: Label
 var _cursor: Control
-var _cursor_position := Vector2.ZERO
 var _slot_buttons: Array[Button] = []
 var _is_open := false
 
@@ -33,23 +31,6 @@ func _ready() -> void:
 	_set_open(false)
 
 
-func _process(delta: float) -> void:
-	if not _is_open:
-		return
-
-	var stick_input := Input.get_vector(
-		"move_left",
-		"move_right",
-		"move_forward",
-		"move_backward",
-		0.2
-	)
-	if stick_input.length() > 0.0:
-		_cursor_position += stick_input * CONTROLLER_CURSOR_SPEED * delta
-		_cursor_position = _cursor_position.clamp(Vector2.ZERO, size)
-		_update_cursor_position()
-
-
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("inventory"):
 		_set_open(not _is_open)
@@ -57,13 +38,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif _is_open and event.is_action_pressed("ui_cancel"):
 		_set_open(false)
 		get_viewport().set_input_as_handled()
-	elif _is_open and event is InputEventMouseMotion:
-		_cursor_position = event.position
-		_update_cursor_position()
-	elif _is_open and event is InputEventJoypadButton:
-		if event.pressed and event.button_index == JOY_BUTTON_A:
-			_select_item_under_cursor()
-			get_viewport().set_input_as_handled()
 
 
 func _build_interface() -> void:
@@ -118,6 +92,7 @@ func _build_interface() -> void:
 	_cursor.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_cursor.size = Vector2(22, 22)
 	_cursor.z_index = 100
+	_cursor.connect("primary_action", _select_item_at_position)
 	add_child(_cursor)
 
 
@@ -154,24 +129,18 @@ func _on_slot_selected(slot_index: int) -> void:
 func _set_open(open: bool) -> void:
 	_is_open = open
 	_panel.visible = open
-	_cursor.visible = open
 	_crosshair.visible = not open
 	mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	_player.set("controls_enabled", not open)
 	if open:
-		_cursor_position = size * 0.5
-		_update_cursor_position()
+		_cursor.call("activate", size)
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 	else:
+		_cursor.call("deactivate")
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-func _update_cursor_position() -> void:
-	_cursor.position = _cursor_position - _cursor.size * 0.5
-
-
-func _select_item_under_cursor() -> void:
-	var global_cursor_position := get_global_transform_with_canvas() * _cursor_position
+func _select_item_at_position(global_cursor_position: Vector2) -> void:
 	for slot_index in _slot_buttons.size():
 		var button := _slot_buttons[slot_index]
 		if not button.disabled and button.get_global_rect().has_point(global_cursor_position):
