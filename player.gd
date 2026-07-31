@@ -14,10 +14,12 @@ const CONTROLLER_DEADZONE := 0.15
 var controls_enabled := true
 var tracking_enabled := true
 var tracker_connected := false
+var third_person_enabled := false
 var skeleton: Skeleton3D
 var _jaw_rest := Quaternion.IDENTITY
 var _smoothed_points: Array[Vector3] = []
 var _camera_rest_position := Vector3.ZERO
+var _camera_rest_rotation := Vector3.ZERO
 
 const TRACKED_BONES := {
 	"hip_02": "hip", "abdomen_03": "abdomen", "chest_04": "chest",
@@ -31,6 +33,7 @@ const TRACKED_BONES := {
 func _ready():
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if OS.has_feature("web") else Input.MOUSE_MODE_CAPTURED
 	_camera_rest_position = player_camera.position
+	_camera_rest_rotation = player_camera.rotation
 	if spartan_model:
 		skeleton = spartan_model.find_child("Skeleton3D", true, false) as Skeleton3D
 	if skeleton:
@@ -97,10 +100,17 @@ func _follow_tracked_head() -> void:
 	if head_id < 0:
 		return
 	var head_world := skeleton.global_transform * skeleton.get_bone_global_pose(head_id)
-	# Follow the tracked head position, but retain player/mouse look orientation.
-	# The unscaled world-space offset keeps the lens 22 cm beyond the face.
-	var camera_forward := -player_camera.global_basis.z.normalized()
-	player_camera.global_position = head_world.origin + camera_forward * 0.22
+	if third_person_enabled:
+		var target := head_world.origin + Vector3.UP * 0.12
+		var behind := global_basis.z.normalized()
+		player_camera.global_position = target + behind * 3.2 + Vector3.UP * 0.65
+		player_camera.look_at(target, Vector3.UP)
+	else:
+		# Follow the tracked head while retaining player/mouse look orientation.
+		# The unscaled world-space offset keeps the lens 22 cm beyond the face.
+		player_camera.rotation = _camera_rest_rotation
+		var camera_forward := -player_camera.global_basis.z.normalized()
+		player_camera.global_position = head_world.origin + camera_forward * 0.22
 
 func _drive_bone_global(bone_name: String, start: Vector3, end: Vector3) -> void:
 	var bone_id := skeleton.find_bone(bone_name)
@@ -138,6 +148,14 @@ func _apply_tracked_face(face) -> void:
 	skeleton.set_bone_pose_rotation(jaw_id, _jaw_rest * Quaternion(Vector3.RIGHT, openness * 0.6))
 
 func _input(event):
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F5:
+		third_person_enabled = not third_person_enabled
+		if not third_person_enabled:
+			player_camera.rotation = _camera_rest_rotation
+		_follow_tracked_head()
+		print("Third-person camera %s" % ("enabled" if third_person_enabled else "disabled"))
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_T:
 		tracking_enabled = not tracking_enabled
 		if not tracking_enabled and skeleton:
