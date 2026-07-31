@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://hotbar_ui.gd" id="7_hotbar_ui"]
 [ext_resource type="Script" path="res://held_item.gd" id="8_held_item"]
 [ext_resource type="Script" path="res://joycon_support.gd" id="9_joycon"]
+[ext_resource type="Script" path="res://motion_receiver.gd" id="10_motion"]
+[ext_resource type="PackedScene" path="res://models/dnd_grey_stick_rig.glb" id="11_spartan"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_n7e0o"]
 
@@ -28,6 +30,9 @@ reflected_light_source = 2
 tonemap_mode = 2
 
 [node name="World" type="Node3D" unique_id=743953563]
+
+[node name="MotionReceiver" type="Node" parent="."]
+script = ExtResource("10_motion")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_world")
@@ -78,6 +83,9 @@ script = ExtResource("1_f3sb7")
 
 [node name="ControllerSupport" type="Node" parent="Player"]
 script = ExtResource("9_joycon")
+
+[node name="SpartanModel" parent="Player" instance=ExtResource("11_spartan")]
+transform = Transform3D(-0.105, 0, 0, 0, 0.105, 0, 0, 0, -0.105, 0, -1, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1886463705]
 shape = SubResource("CapsuleShape3D_n7e0o")
