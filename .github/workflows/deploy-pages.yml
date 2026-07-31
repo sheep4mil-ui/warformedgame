@@ -24,6 +24,12 @@ jobs:
       - name: Check out project
         uses: actions/checkout@v4
 
+      - name: Install Godot export templates
+        run: |
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          cp -r /root/.local/share/godot/export_templates/4.7.1.stable \
+            "$HOME/.local/share/godot/export_templates/"
+
       - name: Export web build
         run: |
           mkdir -p build/web
