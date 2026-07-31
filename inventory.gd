@@ -16,9 +16,9 @@ func _ready() -> void:
 		_slots[index] = {}
 
 	# Starter items make the first inventory build immediately testable.
-	add_item("training_blade", "Training Blade", 1, 1)
-	add_item("repair_gel", "Repair Gel", 3, 5)
-	add_item("credit_chip", "Credit Chips", 24, 99)
+	add_item("training_blade", "Training Blade", 1, false)
+	add_item("repair_gel", "Repair Gel", 3)
+	add_item("credit_chip", "Credit Chips", 24)
 
 
 func get_slots_snapshot() -> Array[Dictionary]:
@@ -32,33 +32,31 @@ func add_item(
 	item_id: StringName,
 	display_name: String,
 	quantity: int = 1,
-	max_stack: int = 1
+	stackable: bool = true
 ) -> int:
 	var remaining := maxi(quantity, 0)
 
-	# Fill existing stacks first.
-	for slot in _slots:
-		if remaining == 0:
+	# Stackable items have no quantity ceiling and share one slot per item ID.
+	if stackable:
+		for slot in _slots:
+			if slot.get("id", &"") != item_id or not bool(slot.get("stackable", true)):
+				continue
+			slot["quantity"] = int(slot.get("quantity", 0)) + remaining
+			remaining = 0
 			break
-		if slot.get("id", &"") != item_id:
-			continue
-		var free_space: int = maxi(int(slot.get("max_stack", 1)) - int(slot.get("quantity", 0)), 0)
-		var moved := mini(remaining, free_space)
-		slot["quantity"] = int(slot.get("quantity", 0)) + moved
-		remaining -= moved
 
-	# Then occupy empty slots.
+	# New stackable items use one slot. Non-stackable items use one slot each.
 	for index in _slots.size():
 		if remaining == 0:
 			break
 		if not _slots[index].is_empty():
 			continue
-		var moved := mini(remaining, maxi(max_stack, 1))
+		var moved := remaining if stackable else 1
 		_slots[index] = {
 			"id": item_id,
 			"name": display_name,
 			"quantity": moved,
-			"max_stack": maxi(max_stack, 1),
+			"stackable": stackable,
 		}
 		remaining -= moved
 
@@ -82,4 +80,3 @@ func remove_from_slot(slot_index: int, quantity: int = 1) -> bool:
 
 	inventory_changed.emit(get_slots_snapshot())
 	return true
-

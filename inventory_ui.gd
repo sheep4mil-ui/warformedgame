@@ -107,9 +107,11 @@ func _on_slot_selected(slot_index: int) -> void:
 		return
 
 	var slot: Dictionary = slots[slot_index]
-	_details.text = "%s  •  Quantity: %d  •  Item ID: %s" % [
+	var stack_type := "Infinite stack" if bool(slot.get("stackable", true)) else "Non-stackable"
+	_details.text = "%s  •  Quantity: %d  •  %s  •  Item ID: %s" % [
 		str(slot.get("name", "Unknown")),
 		int(slot.get("quantity", 0)),
+		stack_type,
 		str(slot.get("id", &"")),
 	]
 
