@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Warformed Motion Sender</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#070c16;color:#eef5ff}*{box-sizing:border-box}
+    body{margin:0;min-height:100vh;padding:20px;background:radial-gradient(circle at top,#15233c,#070c16 55%)}
+    main{max-width:720px;margin:auto}.eyebrow{color:#72f2c6;font-weight:800;letter-spacing:.16em;font-size:.72rem}
+    h1{margin:.25rem 0 1rem;font-size:clamp(2rem,9vw,4rem)}.card{padding:16px;border:1px solid #26344e;border-radius:18px;background:#0b1322cc}
+    video{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;background:#03060c;transform:scaleX(-1)}
+    .row{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap}
+    .code{font:800 2rem ui-monospace,monospace;letter-spacing:.16em}.status{color:#aebbd0}
+    button{width:100%;margin-top:14px;padding:15px;border:0;border-radius:12px;background:#72f2c6;color:#07110e;font-weight:900;font-size:1rem}
+    button:disabled{opacity:.55}.hint{color:#aebbd0;line-height:1.5}
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">WARFORMED BODY TRACKING</div>
+  <h1>Phone sender</h1>
+  <div class="card">
+    <video id="camera" playsinline muted></video>
+    <div class="row"><div><small>PAIRING CODE</small><div class="code" id="code">------</div></div><div class="status" id="status">Camera is off</div></div>
+    <button id="start">Start camera tracking</button>
+    <p class="hint">Enter this code in the game on your computer. Keep your full body, face, and hands inside the camera view.</p>
+  </div>
+</main>
+<script type="module">
+import {FilesetResolver,PoseLandmarker,HandLandmarker,FaceLandmarker} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/+esm';
+import Peer from 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/+esm';
+
+const video=document.querySelector('#camera'),start=document.querySelector('#start'),status=document.querySelector('#status'),codeNode=document.querySelector('#code');
+const code=Math.random().toString(36).slice(2,8).toUpperCase();codeNode.textContent=code;
+const peer=new Peer(`warformed-motion-${code.toLowerCase()}`),connections=[];
+peer.on('open',()=>status.textContent='Waiting for game');
+peer.on('connection',connection=>{connections.push(connection);connection.on('open',()=>status.textContent='Game connected');connection.on('close',()=>status.textContent='Game disconnected')});
+peer.on('error',()=>status.textContent='Pairing service unavailable');
+let pose,hand,face,running=false,frame=0,lastTime=-1;
+
+start.addEventListener('click',async()=>{
+  if(running)return;start.disabled=true;status.textContent='Loading trackers...';
+  try{
+    const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
+    pose=await PoseLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task',delegate:'GPU'},runningMode:'VIDEO',numPoses:1,minPoseDetectionConfidence:.55,minTrackingConfidence:.55});
+    hand=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.5,minTrackingConfidence:.5});
+    face=await FaceLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numFaces:1,outputFaceBlendshapes:true,minFaceDetectionConfidence:.5,minTrackingConfidence:.5});
+    video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}},audio:false});
+    await video.play();running=true;status.textContent=connections.some(c=>c.open)?'Game connected':'Waiting for game';track();
+  }catch(error){status.textContent='Camera or tracker could not start';start.disabled=false;console.error(error)}
+});
+
+function handLatch(posePoints){
+  if(!posePoints?.length)return false;
+  const center=ids=>ids.reduce((a,i)=>[a[0]+posePoints[i].x,a[1]+posePoints[i].y,a[2]+posePoints[i].z],[0,0,0]).map(v=>v/ids.length);
+  const a=center([15,17,19,21]),b=center([16,18,20,22]);return Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])<=.04;
+}
+function track(){
+  if(!running)return;requestAnimationFrame(track);if(video.currentTime===lastTime)return;lastTime=video.currentTime;
+  const now=performance.now(),body=pose.detectForVideo(video,now),packet={pose:[],hands:[],handedness:[],face:{},handsLatched:false};
+  const posePoints=body.worldLandmarks[0]||body.landmarks[0];if(!posePoints)return;
+  packet.pose=posePoints.map(p=>[p.x,p.y,p.z,p.visibility??1]);packet.handsLatched=handLatch(posePoints);
+  if(frame++%2===0){
+    const hands=hand.detectForVideo(video,now),facial=face.detectForVideo(video,now);
+    packet.hands=hands.worldLandmarks.map(points=>points.map(p=>[p.x,p.y,p.z]));
+    packet.handedness=hands.handedness.map(categories=>(categories[0]?.categoryName||'Left')==='Left'?'Right':'Left');
+    packet.face=Object.fromEntries((facial.faceBlendshapes[0]?.categories||[]).map(c=>[c.categoryName,c.score]));
+  }
+  for(const connection of connections)if(connection.open)connection.send(packet);
+}
+</script>
+</body>
+</html>
