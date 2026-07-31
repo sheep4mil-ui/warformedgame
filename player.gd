@@ -82,10 +82,11 @@ func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
 		"abdomen": [hip, hip.lerp(shoulders, 0.52)],
 		"chest": [hip.lerp(shoulders, 0.48), shoulders],
 		"neck": [shoulders, points[0]], "head": [shoulders.lerp(points[0], 0.65), points[0]],
-		"right_upper_arm": [points[12], points[14]], "right_forearm": [points[14], points[16]],
-		"right_hand": [points[16], (points[18] + points[20] + points[22]) / 3.0],
-		"left_upper_arm": [points[11], points[13]], "left_forearm": [points[13], points[15]],
-		"left_hand": [points[15], (points[17] + points[19] + points[21]) / 3.0],
+		# The mirrored phone camera reports the visible sides opposite the rig.
+		"right_upper_arm": [points[11], points[13]], "right_forearm": [points[13], points[15]],
+		"right_hand": [points[15], (points[17] + points[19] + points[21]) / 3.0],
+		"left_upper_arm": [points[12], points[14]], "left_forearm": [points[14], points[16]],
+		"left_hand": [points[16], (points[18] + points[20] + points[22]) / 3.0],
 		"right_thigh": [points[24], points[26]], "right_shin": [points[26], points[28]], "right_foot": [points[28], points[32]],
 		"left_thigh": [points[23], points[25]], "left_shin": [points[25], points[27]], "left_foot": [points[27], points[31]],
 	}
