@@ -69,6 +69,12 @@ func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
 		for index in raw_points.size():
 			_smoothed_points[index] = _smoothed_points[index].lerp(raw_points[index], 0.58)
 	var points: Array[Vector3] = _smoothed_points.duplicate()
+	# The imported character faces through a 180-degree model transform. Keep
+	# left/right mapping as-is, but flip arm depth into the rig's local space so
+	# elbows and wrists bend toward the tracked hands instead of behind the body.
+	var arm_points: Array[Vector3] = points.duplicate()
+	for index in range(11, 23):
+		arm_points[index].z = -arm_points[index].z
 	if hands_latched:
 		# Aim both forearms at one shared wrist while retaining each hand's
 		# direction. Collapsing every finger point made the hand bone undefined.
@@ -83,10 +89,10 @@ func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
 		"chest": [hip.lerp(shoulders, 0.48), shoulders],
 		"neck": [shoulders, points[0]], "head": [shoulders.lerp(points[0], 0.65), points[0]],
 		# The mirrored phone camera reports the visible sides opposite the rig.
-		"right_upper_arm": [points[11], points[13]], "right_forearm": [points[13], points[15]],
-		"right_hand": [points[15], (points[17] + points[19] + points[21]) / 3.0],
-		"left_upper_arm": [points[12], points[14]], "left_forearm": [points[14], points[16]],
-		"left_hand": [points[16], (points[18] + points[20] + points[22]) / 3.0],
+		"right_upper_arm": [arm_points[11], arm_points[13]], "right_forearm": [arm_points[13], arm_points[15]],
+		"right_hand": [arm_points[15], (arm_points[17] + arm_points[19] + arm_points[21]) / 3.0],
+		"left_upper_arm": [arm_points[12], arm_points[14]], "left_forearm": [arm_points[14], arm_points[16]],
+		"left_hand": [arm_points[16], (arm_points[18] + arm_points[20] + arm_points[22]) / 3.0],
 		"right_thigh": [points[24], points[26]], "right_shin": [points[26], points[28]], "right_foot": [points[28], points[32]],
 		"left_thigh": [points[23], points[25]], "left_shin": [points[25], points[27]], "left_foot": [points[27], points[31]],
 	}
