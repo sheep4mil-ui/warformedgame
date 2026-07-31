@@ -7,13 +7,14 @@ const CONTROLLER_LOOK_SPEED := 2.5
 const CONTROLLER_DEADZONE := 0.15
 
 @onready var head: Node3D = $Head
+var controls_enabled := true
 
 func _ready():
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _input(event):
 	# Mouse look
-	if event is InputEventMouseMotion:
+	if controls_enabled and event is InputEventMouseMotion:
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 
@@ -30,6 +31,14 @@ func _input(event):
 
 
 func _physics_process(delta):
+	if not controls_enabled:
+		velocity.x = move_toward(velocity.x, 0.0, SPEED)
+		velocity.z = move_toward(velocity.z, 0.0, SPEED)
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+		move_and_slide()
+		return
+
 	# Right stick look
 	var look_input := Input.get_vector(
 		"look_left",
