@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://cn81rmleyoi8g"]
+
+[ext_resource type="Script" uid="uid://bmcqu5phx5fby" path="res://player.gd" id="1_f3sb7"]
+[ext_resource type="Script" uid="uid://csysqh14l5vf7" path="res://pause_menu.gd" id="2_fj7yv"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_n7e0o"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ie812"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_n7e0o"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_n7e0o"]
+
+[node name="World" type="Node3D" unique_id=743953563]
+
+[node name="floor" type="StaticBody3D" parent="." unique_id=499116963]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="floor" unique_id=1305978480]
+transform = Transform3D(20, 0, 0, 0, 0.5, 0, 0, 0, 20, 0, 0, 0)
+mesh = SubResource("BoxMesh_n7e0o")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="floor" unique_id=592751903]
+transform = Transform3D(20, 0, 0, 0, 0.5, 0, 0, 0, 20, 0, 0, 0)
+shape = SubResource("BoxShape3D_ie812")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1890744517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19211769, 1.8328671, -0.96552086)
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=114267421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+script = ExtResource("1_f3sb7")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1886463705]
+shape = SubResource("CapsuleShape3D_n7e0o")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player" unique_id=856189707]
+visible = false
+mesh = SubResource("CapsuleMesh_n7e0o")
+
+[node name="Head" type="Node3D" parent="Player" unique_id=23005273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=997109270]
+current = true
+
+[node name="PauseMenu" type="CanvasLayer" parent="." unique_id=1398666719]
+process_mode = 2
+script = ExtResource("2_fj7yv")
+
+[node name="Panel" type="Panel" parent="PauseMenu" unique_id=1891483046]
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PauseMenu/Panel" unique_id=263445181]
+layout_mode = 0
+offset_left = 450.0
+offset_top = 250.0
+offset_right = 650.0
+offset_bottom = 370.0
+
+[node name="PausedLabel" type="Label" parent="PauseMenu/Panel/VBoxContainer" unique_id=621991655]
+layout_mode = 2
+text = "PAUSED"
+
+[node name="ResumeButton" type="Button" parent="PauseMenu/Panel/VBoxContainer" unique_id=518773178]
+layout_mode = 2
+text = "RESUME"
+
+[node name="QuitButton" type="Button" parent="PauseMenu/Panel/VBoxContainer" unique_id=340245928]
+layout_mode = 2
+text = "QUIT GAME"
+
+[connection signal="pressed" from="PauseMenu/Panel/VBoxContainer/ResumeButton" to="PauseMenu" method="_on_resume_button_pressed"]
+[connection signal="pressed" from="PauseMenu/Panel/VBoxContainer/QuitButton" to="PauseMenu" method="_on_quit_button_pressed"]
