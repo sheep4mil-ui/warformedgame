@@ -10,6 +10,8 @@ var _pending: Array[WebSocketPeer] = []
 var _clients: Array[WebSocketPeer] = []
 var _web_status_label: Label
 var _web_code_input: LineEdit
+var _web_pairing_panel: PanelContainer
+var _web_was_connected := false
 
 func _ready() -> void:
 	if OS.has_feature("web"):
@@ -93,12 +95,12 @@ func _create_pairing_ui() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "MotionTrackingPairing"
 	add_child(layer)
-	var panel := PanelContainer.new()
-	panel.position = Vector2(18, 18)
-	panel.custom_minimum_size = Vector2(250, 0)
-	layer.add_child(panel)
+	_web_pairing_panel = PanelContainer.new()
+	_web_pairing_panel.position = Vector2(18, 18)
+	_web_pairing_panel.custom_minimum_size = Vector2(250, 0)
+	layer.add_child(_web_pairing_panel)
 	var box := VBoxContainer.new()
-	panel.add_child(box)
+	_web_pairing_panel.add_child(box)
 	var title := Label.new()
 	title.text = "PHONE BODY TRACKING"
 	box.add_child(title)
@@ -125,6 +127,11 @@ func _poll_web_receiver() -> void:
 	var status = JavaScriptBridge.eval("window.motionMirrorStatus || 'Enter phone code'", true)
 	if _web_status_label and status is String:
 		_web_status_label.text = status
+	var connected: bool = status == "Phone connected"
+	if connected and not _web_was_connected:
+		_web_pairing_panel.visible = false
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_web_was_connected = connected
 	var packet_json = JavaScriptBridge.eval("window.motionMirrorTakePacket ? window.motionMirrorTakePacket() : ''", true)
 	if packet_json is String and not packet_json.is_empty():
 		_emit_json_packet(packet_json)

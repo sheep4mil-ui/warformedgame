@@ -26,7 +26,7 @@ const TRACKED_BONES := {
 }
 
 func _ready():
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if OS.has_feature("web") else Input.MOUSE_MODE_CAPTURED
 	if spartan_model:
 		skeleton = spartan_model.find_child("Skeleton3D", true, false) as Skeleton3D
 	if skeleton:
@@ -132,7 +132,7 @@ func _input(event):
 
 	# Capture mouse when left-clicking.
 	if event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not OS.has_feature("web"):
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
