@@ -52,6 +52,8 @@ jobs:
         run: |
           mkdir -p build/web/phone
           cp web/phone/index.html build/web/phone/index.html
+          cp web/game-motion-bridge.js build/web/game-motion-bridge.js
+          sed -i 's#</body>#<script src="game-motion-bridge.js"></script></body>#' build/web/index.html
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

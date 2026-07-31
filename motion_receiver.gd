@@ -56,6 +56,9 @@ func _poll_desktop_receiver() -> void:
 			_emit_json_packet(text)
 
 func _setup_web_receiver() -> void:
+	var external_ui = JavaScriptBridge.eval("window.motionMirrorExternalUI === true", true)
+	if external_ui == true:
+		return
 	JavaScriptBridge.eval("""
 		window.motionMirrorQueue = [];
 		window.motionMirrorStatus = 'Enter phone code';
@@ -129,8 +132,9 @@ func _poll_web_receiver() -> void:
 		_web_status_label.text = status
 	var connected: bool = status == "Phone connected"
 	if connected and not _web_was_connected:
-		_web_pairing_panel.visible = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		if _web_pairing_panel:
+			_web_pairing_panel.visible = false
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_web_was_connected = connected
 	var packet_json = JavaScriptBridge.eval("window.motionMirrorTakePacket ? window.motionMirrorTakePacket() : ''", true)
 	if packet_json is String and not packet_json.is_empty():
