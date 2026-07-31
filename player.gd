@@ -19,7 +19,8 @@ var _smoothed_points: Array[Vector3] = []
 
 const TRACKED_BONES := {
 	"hip_02": "hip", "abdomen_03": "abdomen", "chest_04": "chest",
-	"neck_05": "neck", "head_06": "head",
+	# Keep the first-person head stable. Tracking these bones made the face move
+	# around the fixed camera and exposed the inside of the mesh.
 	"rShldr_018": "right_upper_arm", "rForeArm_019": "right_forearm", "rHand_020": "right_hand",
 	"lShldr_042": "left_upper_arm", "lForeArm_043": "left_forearm", "lHand_044": "left_hand",
 	"rThigh_083": "right_thigh", "rShin_084": "right_shin", "rFoot_085": "right_foot",
