@@ -20,6 +20,8 @@ var _jaw_rest := Quaternion.IDENTITY
 var _smoothed_points: Array[Vector3] = []
 var _camera_rest_position := Vector3.ZERO
 var _camera_rest_rotation := Vector3.ZERO
+var _has_tracked_head_yaw := false
+var _last_tracked_head_yaw := 0.0
 
 const TRACKED_BONES := {
 	"hip_02": "hip", "abdomen_03": "abdomen", "chest_04": "chest",
@@ -69,6 +71,7 @@ func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
 		for index in raw_points.size():
 			_smoothed_points[index] = _smoothed_points[index].lerp(raw_points[index], 0.58)
 	var points: Array[Vector3] = _smoothed_points.duplicate()
+	_turn_player_from_head(points)
 	# Preserve physical arm ownership and vertical/depth motion, but mirror each
 	# arm's horizontal reach around its own shoulder for the rotated game rig.
 	var arm_points: Array[Vector3] = points.duplicate()
@@ -101,6 +104,25 @@ func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
 		if segment.size() == 2:
 			_drive_bone_global(bone_name, segment[0], segment[1])
 	_follow_tracked_head()
+
+func _turn_player_from_head(points: Array[Vector3]) -> void:
+	# Ear-to-ear depth gives stable head yaw even when the face mesh is skipped
+	# on alternate phone frames. Apply only the change since the previous frame
+	# so normal mouse/controller turning remains compatible.
+	var ear_line := points[8] - points[7]
+	if Vector2(ear_line.x, ear_line.z).length_squared() < 0.0004:
+		_has_tracked_head_yaw = false
+		return
+	var tracked_yaw := atan2(ear_line.z, ear_line.x)
+	if not _has_tracked_head_yaw:
+		_last_tracked_head_yaw = tracked_yaw
+		_has_tracked_head_yaw = true
+		return
+	var yaw_change := wrapf(tracked_yaw - _last_tracked_head_yaw, -PI, PI)
+	_last_tracked_head_yaw = tracked_yaw
+	if absf(yaw_change) < 0.006:
+		return
+	rotate_y(clampf(yaw_change * 0.72, -0.065, 0.065))
 
 func _follow_tracked_head() -> void:
 	var head_id := skeleton.find_bone("head_06")
@@ -165,6 +187,7 @@ func _input(event):
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_T:
 		tracking_enabled = not tracking_enabled
+		_has_tracked_head_yaw = false
 		if not tracking_enabled and skeleton:
 			skeleton.clear_bones_global_pose_override()
 			player_camera.position = _camera_rest_position
