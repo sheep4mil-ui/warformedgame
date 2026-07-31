@@ -7,6 +7,7 @@ const CONTROLLER_LOOK_SPEED := 2.5
 const CONTROLLER_DEADZONE := 0.15
 
 @onready var head: Node3D = $Head
+@onready var controller_support: Node = $ControllerSupport
 var controls_enabled := true
 
 func _ready():
@@ -40,13 +41,7 @@ func _physics_process(delta):
 		return
 
 	# Right stick look
-	var look_input := Input.get_vector(
-		"look_left",
-		"look_right",
-		"look_up",
-		"look_down",
-		CONTROLLER_DEADZONE
-	)
+	var look_input: Vector2 = controller_support.call("get_look_vector")
 
 	rotate_y(-look_input.x * CONTROLLER_LOOK_SPEED * delta)
 	head.rotate_x(-look_input.y * CONTROLLER_LOOK_SPEED * delta)
@@ -66,12 +61,7 @@ func _physics_process(delta):
 		velocity.y = JUMP_VELOCITY
 
 	# Movement
-	var movement_input := Input.get_vector(
-		"move_left",
-		"move_right",
-		"move_forward",
-		"move_backward"
-	)
+	var movement_input: Vector2 = controller_support.call("get_movement_vector")
 
 	var arrow_input := Input.get_vector(
 		"ui_left",

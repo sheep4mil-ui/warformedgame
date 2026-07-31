@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://hotbar.gd" id="6_hotbar"]
 [ext_resource type="Script" path="res://hotbar_ui.gd" id="7_hotbar_ui"]
 [ext_resource type="Script" path="res://held_item.gd" id="8_held_item"]
+[ext_resource type="Script" path="res://joycon_support.gd" id="9_joycon"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_n7e0o"]
 
@@ -74,6 +75,9 @@ omni_range = 9.0
 [node name="Player" type="CharacterBody3D" parent="." unique_id=114267421]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 script = ExtResource("1_f3sb7")
+
+[node name="ControllerSupport" type="Node" parent="Player"]
+script = ExtResource("9_joycon")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1886463705]
 shape = SubResource("CapsuleShape3D_n7e0o")
