@@ -10,7 +10,7 @@
 [ext_resource type="Script" path="res://held_item.gd" id="8_held_item"]
 [ext_resource type="Script" path="res://joycon_support.gd" id="9_joycon"]
 [ext_resource type="Script" path="res://motion_receiver.gd" id="10_motion"]
-[ext_resource type="PackedScene" path="res://models/dnd_low_poly_human_rigged_v3.glb" id="11_spartan"]
+[ext_resource type="PackedScene" path="res://models/dnd_low_poly_human_rigged_v4.glb" id="11_spartan"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_n7e0o"]
 
