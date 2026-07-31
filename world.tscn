@@ -85,7 +85,7 @@ script = ExtResource("1_f3sb7")
 script = ExtResource("9_joycon")
 
 [node name="SpartanModel" parent="Player" instance=ExtResource("11_spartan")]
-transform = Transform3D(-0.105, 0, 0, 0, 0.105, 0, 0, 0, -0.105, 0, -1, 0)
+transform = Transform3D(-0.118, 0, 0, 0, 0.118, 0, 0, 0, -0.118, 0, -1, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1886463705]
 shape = SubResource("CapsuleShape3D_n7e0o")

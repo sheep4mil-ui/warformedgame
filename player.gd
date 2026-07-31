@@ -15,6 +15,7 @@ var tracking_enabled := true
 var tracker_connected := false
 var skeleton: Skeleton3D
 var _jaw_rest := Quaternion.IDENTITY
+var _smoothed_points: Array[Vector3] = []
 
 const TRACKED_BONES := {
 	"hip_02": "hip", "abdomen_03": "abdomen", "chest_04": "chest",
@@ -53,20 +54,25 @@ func _tracking_point(raw_pose: Array, index: int) -> Vector3:
 	return Vector3(-float(point[0]), -float(point[1]), -float(point[2]))
 
 func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
-	var points: Array[Vector3] = []
+	var raw_points: Array[Vector3] = []
 	for index in raw_pose.size():
-		points.append(_tracking_point(raw_pose, index))
+		raw_points.append(_tracking_point(raw_pose, index))
+	if _smoothed_points.size() != raw_points.size():
+		_smoothed_points = raw_points.duplicate()
+	else:
+		for index in raw_points.size():
+			_smoothed_points[index] = _smoothed_points[index].lerp(raw_points[index], 0.58)
+	var points: Array[Vector3] = _smoothed_points.duplicate()
 	if hands_latched:
-		var palm := Vector3.ZERO
-		for index in [15, 17, 19, 21, 16, 18, 20, 22]:
-			palm += points[index]
-		palm /= 8.0
-		for index in [15, 17, 19, 21, 16, 18, 20, 22]:
-			points[index] = palm
+		# Aim both forearms at one shared wrist while retaining each hand's
+		# direction. Collapsing every finger point made the hand bone undefined.
+		var shared_wrist := (points[15] + points[16]) * 0.5
+		points[15] = shared_wrist
+		points[16] = shared_wrist
 	var hip := (points[23] + points[24]) * 0.5
 	var shoulders := (points[11] + points[12]) * 0.5
 	var segments := {
-		"hip": [hip + Vector3(0, -0.25, 0), hip],
+		"hip": [hip, shoulders],
 		"abdomen": [hip, hip.lerp(shoulders, 0.52)],
 		"chest": [hip.lerp(shoulders, 0.48), shoulders],
 		"neck": [shoulders, points[0]], "head": [shoulders.lerp(points[0], 0.65), points[0]],
@@ -89,16 +95,23 @@ func _drive_bone_global(bone_name: String, start: Vector3, end: Vector3) -> void
 	var children := skeleton.get_bone_children(bone_id)
 	if children.is_empty():
 		return
-	var rest := skeleton.get_bone_global_rest(bone_id)
+	var rest_global := skeleton.get_bone_global_rest(bone_id)
 	var child_rest := skeleton.get_bone_global_rest(children[0])
-	var rest_direction := child_rest.origin - rest.origin
+	var rest_direction := child_rest.origin - rest_global.origin
 	var target := end - start
 	if rest_direction.length_squared() < 0.0001 or target.length_squared() < 0.0001:
 		return
 	var delta_rotation := Quaternion(rest_direction.normalized(), target.normalized())
-	var target_pose := rest
-	target_pose.basis = Basis(delta_rotation * rest.basis.get_rotation_quaternion())
-	skeleton.set_bone_global_pose_override(bone_id, target_pose, 0.82, true)
+	var desired_global := delta_rotation * rest_global.basis.get_rotation_quaternion()
+	var parent_id := skeleton.get_bone_parent(bone_id)
+	var parent_global := Quaternion.IDENTITY
+	if parent_id >= 0:
+		parent_global = skeleton.get_bone_global_pose(parent_id).basis.get_rotation_quaternion()
+	var desired_local := parent_global.inverse() * desired_global
+	var current_local := skeleton.get_bone_pose_rotation(bone_id)
+	# Local rotations preserve the skeleton hierarchy. Global pose overrides also
+	# froze each rest-position origin, making the limbs detach and act alone.
+	skeleton.set_bone_pose_rotation(bone_id, current_local.slerp(desired_local, 0.82))
 
 func _apply_tracked_face(face) -> void:
 	if not skeleton or not (face is Dictionary):
