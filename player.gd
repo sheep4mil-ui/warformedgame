@@ -7,6 +7,7 @@ const CONTROLLER_LOOK_SPEED := 2.5
 const CONTROLLER_DEADZONE := 0.15
 
 @onready var head: Node3D = $Head
+@onready var player_camera: Camera3D = $Head/Camera3D
 @onready var controller_support: Node = $ControllerSupport
 @onready var motion_receiver: Node = get_node_or_null("../MotionReceiver")
 @onready var spartan_model: Node3D = get_node_or_null("SpartanModel")
@@ -16,11 +17,11 @@ var tracker_connected := false
 var skeleton: Skeleton3D
 var _jaw_rest := Quaternion.IDENTITY
 var _smoothed_points: Array[Vector3] = []
+var _camera_rest_position := Vector3.ZERO
 
 const TRACKED_BONES := {
 	"hip_02": "hip", "abdomen_03": "abdomen", "chest_04": "chest",
-	# Keep the first-person head stable. Tracking these bones made the face move
-	# around the fixed camera and exposed the inside of the mesh.
+	"neck_05": "neck", "head_06": "head",
 	"rShldr_018": "right_upper_arm", "rForeArm_019": "right_forearm", "rHand_020": "right_hand",
 	"lShldr_042": "left_upper_arm", "lForeArm_043": "left_forearm", "lHand_044": "left_hand",
 	"rThigh_083": "right_thigh", "rShin_084": "right_shin", "rFoot_085": "right_foot",
@@ -29,6 +30,7 @@ const TRACKED_BONES := {
 
 func _ready():
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if OS.has_feature("web") else Input.MOUSE_MODE_CAPTURED
+	_camera_rest_position = player_camera.position
 	if spartan_model:
 		skeleton = spartan_model.find_child("Skeleton3D", true, false) as Skeleton3D
 	if skeleton:
@@ -88,6 +90,17 @@ func _apply_tracked_pose(raw_pose: Array, hands_latched: bool) -> void:
 		var segment: Array = segments.get(String(TRACKED_BONES[bone_name]), [])
 		if segment.size() == 2:
 			_drive_bone_global(bone_name, segment[0], segment[1])
+	_follow_tracked_head()
+
+func _follow_tracked_head() -> void:
+	var head_id := skeleton.find_bone("head_06")
+	if head_id < 0:
+		return
+	var head_world := skeleton.global_transform * skeleton.get_bone_global_pose(head_id)
+	# Follow the tracked head position, but retain player/mouse look orientation.
+	# The unscaled world-space offset keeps the lens 22 cm beyond the face.
+	var camera_forward := -player_camera.global_basis.z.normalized()
+	player_camera.global_position = head_world.origin + camera_forward * 0.22
 
 func _drive_bone_global(bone_name: String, start: Vector3, end: Vector3) -> void:
 	var bone_id := skeleton.find_bone(bone_name)
@@ -129,6 +142,7 @@ func _input(event):
 		tracking_enabled = not tracking_enabled
 		if not tracking_enabled and skeleton:
 			skeleton.clear_bones_global_pose_override()
+			player_camera.position = _camera_rest_position
 		print("Body tracking %s" % ("enabled" if tracking_enabled else "disabled"))
 		get_viewport().set_input_as_handled()
 		return
