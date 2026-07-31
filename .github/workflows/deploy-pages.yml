@@ -35,6 +35,19 @@ jobs:
           mkdir -p build/web
           godot --headless --verbose --export-release "Web" build/web/index.html
 
+      - name: Version browser assets
+        run: |
+          BUILD_ID=$(printf %.12s "$GITHUB_SHA")
+          mv build/web/index.js "build/web/index-${BUILD_ID}.js"
+          mv build/web/index.pck "build/web/index-${BUILD_ID}.pck"
+          mv build/web/index.wasm "build/web/index-${BUILD_ID}.wasm"
+          sed -i \
+            -e "s/index\\.js/index-${BUILD_ID}.js/g" \
+            -e "s/\"executable\":\"index\"/\"executable\":\"index-${BUILD_ID}\"/g" \
+            -e "s/\"index\\.pck\"/\"index-${BUILD_ID}.pck\"/g" \
+            -e "s/\"index\\.wasm\"/\"index-${BUILD_ID}.wasm\"/g" \
+            build/web/index.html
+
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
