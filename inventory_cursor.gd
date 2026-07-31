@@ -37,7 +37,7 @@ func _process(delta: float) -> void:
 		_update_position()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not _active:
 		return
 
@@ -46,7 +46,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_update_position()
 	elif event is InputEventJoypadButton:
 		if event.pressed and event.button_index == JOY_BUTTON_A:
-			primary_action.emit(get_global_transform_with_canvas() * size * 0.5)
+			var cursor_center := get_global_transform_with_canvas() * (size * 0.5)
+			primary_action.emit(cursor_center)
 			get_viewport().set_input_as_handled()
 
 
